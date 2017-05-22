@@ -3,6 +3,7 @@ import os
 import bcolz
 import numpy as np
 import pandas as pd
+
 from zipline.utils.sentinel import sentinel
 
 
@@ -56,6 +57,33 @@ class PipelineResult(object):
 
         self._ctable = ctable
 
+    def __getitem__(self, key):
+        return self._ctable[key]
+
+    @property
+    def start_date(self):
+        return pd.Timestamp(self._ctable.attrs['start_date'], tz='utc')
+
+    @property
+    def end_date(self):
+        return pd.Timestamp(self._ctable.attrs['end_date'], tz='utc')
+
+    @property
+    def term_names(self):
+        return sorted(set(self._ctable.names) - self._metadata_columns)
+
+    @property
+    def path(self):
+        return self._ctable.rootdir
+
+    @property
+    def dates(self):
+        return self[self._dates_column_name]
+
+    @property
+    def sids(self):
+        return self[self._sid_column_name]
+
     @classmethod
     def from_dataframe(cls, df):
         if (not isinstance(df.index, pd.MultiIndex) or
@@ -92,11 +120,11 @@ class PipelineResult(object):
         index_cols = [self._dates_column_name, self._sid_column_name]
 
         if columns is not self.ALL_COLUMNS:
-            bad_columns = filter(index_cols.__contains__, columns)
+            bad_columns = set(columns) - set(self.term_names)
             if bad_columns:
                 raise ValueError(
-                    "Invalid columns: {bad}. Use result.index.for metadata"
-                    " columns.".format(bad=bad_columns)
+                    "Invalid columns: {bad}. Use result.term_names for "
+                    " available columns.".format(bad=bad_columns)
                 )
 
             ctable = ctable[columns + index_cols]
@@ -116,7 +144,14 @@ class PipelineResult(object):
 
         """
         if write_cols is not self.ALL_COLUMNS:
-            ctable = self._ctable[write_cols]
+            invalid_columns = set(write_cols) - set(self.term_names)
+            if invalid_columns:
+                raise ValueError(
+                    "Invalid columns: {0}. Use result.term_names for"
+                    " list of available columns.".format(invalid_columns)
+                )
+            index_cols = [self._dates_column_name, self._sid_column_name]
+            ctable = self._ctable[write_cols + index_cols]
             for k, v in self._ctable.attrs:
                 ctable.attrs[k] = v
         else:
@@ -141,22 +176,6 @@ class PipelineResult(object):
             The path to open.
         """
         return cls(bcolz.open(path))
-
-    @property
-    def start_date(self):
-        return pd.Timestamp(self._ctable.attrs['start_date'], tz='utc')
-
-    @property
-    def end_date(self):
-        return pd.Timestamp(self._ctable.attrs['end_date'], tz='utc')
-
-    @property
-    def term_names(self):
-        return sorted(set(self._ctable.names) - self._metadata_columns)
-
-    @property
-    def path(self):
-        return self._ctable.rootdir
 
     def dates_indexer(self, start_date, end_date):
         """Create an indexer into the results for the given date range.
@@ -183,14 +202,3 @@ class PipelineResult(object):
         start_idx = np.searchsorted(dates, start_date.to_datetime64())
         end_idx = np.searchsorted(dates, end_date.to_datetime64(), 'right')
         return np.s_[start_idx:end_idx]
-
-    @property
-    def dates(self):
-        return self[self._dates_column_name]
-
-    @property
-    def sids(self):
-        return self[self._sid_column_name]
-
-    def __getitem__(self, key):
-        return self._ctable[key]
