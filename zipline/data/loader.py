@@ -91,7 +91,7 @@ def has_data_for_dates(series_or_df, first_date, last_date):
     return (first <= first_date) and (last >= last_date)
 
 
-def load_market_data(trading_day=None, trading_days=None, bm_symbol='^GSPC'):
+def load_market_data(trading_day=None, trading_days=None, bm_symbol='SPY'):
     """
     Load benchmark returns and treasury yield curves for the given calendar and
     benchmark symbol.
@@ -114,7 +114,7 @@ def load_market_data(trading_day=None, trading_days=None, bm_symbol='^GSPC'):
         A calendar of trading days.  Also used for determining what cached
         dates we should expect to have cached. Defaults to the NYSE calendar.
     bm_symbol : str, optional
-        Symbol for the benchmark index to load.  Defaults to '^GSPC', the Yahoo
+        Symbol for the benchmark index to load.  Defaults to 'SPY', the Google
         ticker for the S&P 500.
 
     Returns
@@ -218,6 +218,8 @@ def ensure_benchmark_data(symbol, first_date, last_date, now, trading_day):
             first_date - trading_day,
             last_date,
         )
+        import pdb
+        pdb.set_trace()
         data.to_csv(get_data_filepath(filename))
     except (OSError, IOError, HTTPError):
         logger.exception('failed to cache the new benchmark returns')
@@ -255,7 +257,7 @@ def ensure_treasury_data(symbol, first_date, last_date, now):
     path.
     """
     loader_module, filename, source = INDEX_MAPPING.get(
-        symbol, INDEX_MAPPING['^GSPC'],
+        symbol, INDEX_MAPPING['SPY'],
     )
     first_date = max(first_date, loader_module.earliest_possible_date())
 
