@@ -1,6 +1,7 @@
 from __future__ import print_function
 from zipline.assets import AssetFinder
 
+from .caching import PipelineResult
 from .classifiers import Classifier, CustomClassifier
 from .engine import SimplePipelineEngine
 from .factors import Factor, CustomFactor
@@ -57,6 +58,7 @@ __all__ = (
     'Factor',
     'Filter',
     'Pipeline',
+    'PipelineResult',
     'SimplePipelineEngine',
     'Term',
     'TermGraph',
