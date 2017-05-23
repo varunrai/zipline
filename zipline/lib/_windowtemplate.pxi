@@ -12,7 +12,7 @@ zipline.lib._intwindow
 zipline.lib._datewindow
 """
 from numpy cimport ndarray
-from numpy import asanyarray, dtype
+from numpy import asanyarray, dtype, issubdtype
 
 
 class Exhausted(Exception):
@@ -145,7 +145,8 @@ cdef class AdjustedArrayWindow:
         new_out = asanyarray(self.data[anchor - self.window_length:anchor])
         if view_kwargs:
             new_out = new_out.view(**view_kwargs)
-        if self.rounding_places is not None and new_out.dtype is dtype('float64'):
+        if self.rounding_places is not None and \
+                issubdtype(new_out.dtype, dtype('float64')):
             new_out = new_out.round(self.rounding_places)
         new_out.setflags(write=False)
         self.output = new_out
