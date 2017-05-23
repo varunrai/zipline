@@ -1,5 +1,8 @@
 from __future__ import print_function
 from zipline.assets import AssetFinder
+from zipline.utils.calendars import get_calendar
+from zipline.utils.date_utils import compute_date_range_chunks
+from zipline.utils.pandas_utils import categorical_df_concat
 
 from .caching import PipelineResult
 from .classifiers import Classifier, CustomClassifier
@@ -48,6 +51,39 @@ def engine_from_files(daily_bar_path,
     )
 
 
+def run_chunked_pipeline(engine, pipeline, start_date, end_date, chunksize):
+    """Run a pipeline to collect the results.
+
+    Parameters
+    ----------
+    engine : Engine
+        The pipeline engine.
+    pipeline : Pipeline
+        The pipeline to run.
+    start_date : pd.Timestamp
+        The start date to run the pipeline for.
+    end_date : pd.Timestamp
+        The end date to run the pipeline for.
+    chunksize : int or None
+        The number of days to execute at a time. If this is None, all the days
+        will be run at once.
+
+    Returns
+    -------
+    results : dict[str, PipelineResult]
+        The results for each output term in the pipeline.
+    """
+    ranges = compute_date_range_chunks(
+        get_calendar('NYSE'),
+        start_date,
+        end_date,
+        chunksize,
+    )
+    chunks = [engine.run_pipeline(pipeline, s, e) for s, e in ranges]
+
+    return categorical_df_concat(chunks, inplace=True)
+
+
 __all__ = (
     'Classifier',
     'CustomFactor',
@@ -60,6 +96,7 @@ __all__ = (
     'Pipeline',
     'PipelineResult',
     'SimplePipelineEngine',
+    'run_chunked_pipeline',
     'Term',
     'TermGraph',
 )
