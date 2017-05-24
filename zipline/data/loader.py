@@ -35,7 +35,7 @@ logger = logbook.Logger('Loader')
 
 # Mapping from index symbol to appropriate bond data
 INDEX_MAPPING = {
-    '^GSPC':
+    'SPY':
     (treasuries, 'treasury_curves.csv', 'www.federalreserve.gov'),
     '^GSPTSE':
     (treasuries_can, 'treasury_curves_can.csv', 'bankofcanada.ca'),
@@ -96,7 +96,7 @@ def load_market_data(trading_day=None, trading_days=None, bm_symbol='SPY'):
     Load benchmark returns and treasury yield curves for the given calendar and
     benchmark symbol.
 
-    Benchmarks are downloaded as a Series from Yahoo Finance.  Treasury curves
+    Benchmarks are downloaded as a Series from Google Finance.  Treasury curves
     are US Treasury Bond rates and are downloaded from 'www.federalreserve.gov'
     by default.  For Canadian exchanges, a loader for Canadian bonds from the
     Bank of Canada is also available.
@@ -218,8 +218,6 @@ def ensure_benchmark_data(symbol, first_date, last_date, now, trading_day):
             first_date - trading_day,
             last_date,
         )
-        import pdb
-        pdb.set_trace()
         data.to_csv(get_data_filepath(filename))
     except (OSError, IOError, HTTPError):
         logger.exception('failed to cache the new benchmark returns')
@@ -292,7 +290,8 @@ def _load_cached_data(filename, first_date, last_date, now, resource_name):
     # yet, so don't try to read from 'path'.
     if os.path.exists(path):
         try:
-            data = from_csv(path).tz_localize('UTC')
+            data = from_csv(path)
+            data.index = data.index.to_datetime().tz_localize('UTC')
             if has_data_for_dates(data, first_date, last_date):
                 return data
 

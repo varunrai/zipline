@@ -25,10 +25,13 @@ def get_benchmark_returns(symbol, start_date, end_date):
 
     start_date is **not** included because we need the close from day N - 1 to
     compute the returns for day N.
+
+    The furthest date that Google goes back to is 2000-06-26.
     """
-    return web.DataReader(
+    data = web.DataReader(
         symbol,
         'google',
         start_date,
         end_date
-    ).sort_index().tz_localize('UTC').pct_change(1).iloc[1:]
+    )
+    return data['Close'].sort_index().tz_localize('UTC').pct_change(1).iloc[1:]
